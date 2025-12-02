@@ -147,13 +147,41 @@ const App: React.FC = () => {
 
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
-          if (e.key === 'Delete' && circuitState.selectedId) {
+          // Ignore if user is typing in an input
+          if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+
+          // Delete / Backspace
+          if ((e.key === 'Delete' || e.key === 'Backspace') && circuitState.selectedId) {
               setCircuitState(prev => ({
                   ...prev,
                   nodes: prev.nodes.filter(n => n.id !== prev.selectedId),
                   wires: prev.wires.filter(w => w.id !== prev.selectedId && w.sourceNodeId !== prev.selectedId && w.targetNodeId !== prev.selectedId),
                   selectedId: null
               }));
+          }
+
+          // R -> Rotate Selected
+          if ((e.key === 'r' || e.key === 'R') && circuitState.selectedId) {
+             setCircuitState(prev => ({
+                 ...prev,
+                 nodes: prev.nodes.map(n => n.id === prev.selectedId ? { ...n, rotation: (n.rotation + 90) % 360 } : n)
+             }));
+          }
+
+          // Space -> Toggle Simulation
+          if (e.key === ' ') {
+              e.preventDefault(); 
+              setIsSimulating(prev => !prev);
+          }
+
+          // Escape -> Clear Selection / Close Modals
+          if (e.key === 'Escape') {
+             setCircuitState(prev => ({ ...prev, selectedId: null }));
+             setShowApiKeyModal(false);
+             setShowHelp(false);
+             setShowTemplatesModal(false);
+             setTruthTable(null);
+             setShowClearConfirm(false);
           }
       };
       window.addEventListener('keydown', handleKeyDown);
@@ -567,7 +595,7 @@ const App: React.FC = () => {
                          </div>
                          <div className="p-8 grid grid-cols-2 gap-8 text-sm">
                              <div className="space-y-4">
-                                <h3 className="text-xs uppercase tracking-widest text-zinc-500 font-bold mb-4">Controls</h3>
+                                <h3 className="text-xs uppercase tracking-widest text-zinc-500 font-bold mb-4">Mouse Controls</h3>
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded flex items-center justify-center border border-zinc-200 dark:border-zinc-700">
                                         <MousePointer2 className="w-5 h-5 text-zinc-700 dark:text-white" />
@@ -597,14 +625,27 @@ const App: React.FC = () => {
                                 </div>
                              </div>
 
-                             <div className="space-y-6">
-                                <h3 className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Pro Features</h3>
-                                <ul className="space-y-3 text-zinc-600 dark:text-zinc-300 list-disc list-inside">
-                                    <li><span className="text-indigo-600 dark:text-amber-400">Neat Mode:</span> Use the toolbar button to snap wires to grid (Great for focus).</li>
-                                    <li><span className="text-indigo-600 dark:text-amber-400">Truth Table:</span> Auto-generates logic proofs for combinatorial circuits.</li>
-                                    <li><span className="text-indigo-600 dark:text-amber-400">Analysis:</span> Click "Explain" to get an engineering breakdown.</li>
-                                </ul>
-
+                             <div className="space-y-4">
+                                <h3 className="text-xs uppercase tracking-widest text-zinc-500 font-bold mb-4">Keyboard Shortcuts</h3>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                     <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+                                         <span className="text-zinc-500">Rotate</span>
+                                         <kbd className="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-mono text-zinc-900 dark:text-white">R</kbd>
+                                     </div>
+                                     <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+                                         <span className="text-zinc-500">Delete</span>
+                                         <kbd className="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-mono text-zinc-900 dark:text-white">Del</kbd>
+                                     </div>
+                                     <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+                                         <span className="text-zinc-500">Simulate</span>
+                                         <kbd className="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-mono text-zinc-900 dark:text-white">Spc</kbd>
+                                     </div>
+                                     <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+                                         <span className="text-zinc-500">Deselect</span>
+                                         <kbd className="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-mono text-zinc-900 dark:text-white">Esc</kbd>
+                                     </div>
+                                </div>
+                                
                                 <div className="mt-8 p-4 bg-indigo-50 dark:bg-amber-500/10 border border-indigo-200 dark:border-amber-500/20 rounded-lg">
                                     <p className="text-[10px] text-indigo-600 dark:text-amber-500 font-mono text-center">
                                         NEXUS | LOGIC ARCHITECT v2.5

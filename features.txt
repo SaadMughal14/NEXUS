@@ -1,4 +1,5 @@
 
+
 NEXUS | LOGIC ARCHITECT v2.5
 OFFICIAL FEATURE MANIFEST & MARKETING POINTS
 
@@ -96,7 +97,7 @@ Unlike "toy" apps, NEXUS includes components needed for actual Computer Architec
    - Collapsible Sidebar: Slide the menu away for a full-screen "Focus Canvas".
 
 ★ Accessibility
-   - Keyboard Shortcuts (Delete key).
+   - Keyboard Shortcuts (Delete, Backspace, Spacebar, R-Rotate, Esc).
    - "Operations Manual": A built-in help modal explaining controls.
    - Mobile Responsive: Works on tablets and phones via touch dragging.
    - Direct Mouse Zoom: Scroll wheel to zoom in/out naturally.
