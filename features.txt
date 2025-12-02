@@ -1,0 +1,110 @@
+
+NEXUS | LOGIC ARCHITECT v2.5
+OFFICIAL FEATURE MANIFEST & MARKETING POINTS
+
+================================================================================
+1. THE "VIRAL" SELLING POINTS (Why this beats paid apps)
+================================================================================
+
+★ "ADHD/OCD FOCUS MODE" (Neurodivergent Friendly)
+   - The Killer Feature: Most circuit apps end up looking like spaghetti. 
+   - One-Click Zen: Instantly snaps messy, curved wires into clean, 90-degree "Manhattan" circuit board lines.
+   - Visual Calm: Reduces neon glows and slows down simulation speed to prevent sensory overload.
+
+★ "HOMEWORK SOLVER" (The Truth Table Terminal)
+   - What it does: One-click mathematical proof. It cycles every possible input combination (00, 01, 10, 11...) and generates a professional data table.
+   - The Flex: Paid apps charge $50+ for this. NEXUS does it for free.
+   - Visuals: Renders as a holographic sci-fi terminal or a clean engineering spreadsheet.
+
+★ AI ARCHITECT (Powered by Google Gemini)
+   - Text-to-Circuit: Type "Create a 4-bit binary counter" and watch the AI build it for you instantly.
+   - Smart Explanation: AI analyzes YOUR circuit and explains how it works in plain English.
+   - ENTERPRISE CONNECTION MANAGER: Professional "Bring Your Own Key" system with connection verification, strict security validation (Regex), status indicators, and secure local storage.
+
+★ SCHEMATICS LIBRARY (New in v2.5)
+   - Pre-Built Engineering Modules:
+     - 4-Bit Binary Subtractor (Complex XOR Logic)
+     - 4-Bit Shift Register (SISO Data Movement)
+     - Full Adder (ALU Building Block)
+     - Traffic Light Controller
+     - SR Latch Memory
+
+================================================================================
+2. PREMIUM AESTHETICS (The "Royal" Design)
+================================================================================
+
+★ Dual-Engine Theme System
+   - DARK MODE ("Obsidian & Royal Gold"): 
+     - A deeply immersive, sci-fi interface. 
+     - Glowing wires with CUSTOMIZABLE COLORS (Gold, Cyan, Purple, Green, Red, White).
+     - Holographic glass panels and neon data flow.
+   - LIGHT MODE ("Blueprint Engineering"):
+     - High-contrast, clean ink-on-paper look.
+     - Zero distractions, solid black lines, distinct node borders.
+     - Perfect for printing or classroom projectors.
+
+★ Tactile Interactions
+   - Glassmorphism: Real-time background blurring on toolbars.
+   - Smart Menu System: De-cluttered "Three Dots" menu for file operations.
+   - Smooth Navigation: Middle-click to Pan, Scroll to Zoom (Infinite Canvas).
+   - Context Menus: Right-click to Rotate or Delete components.
+   - Draggable Toolbar: Mobile-friendly top bar that swipes left/right on small phones.
+   - Floating Palette: Fixed-position color picker that never gets hidden behind toolbars.
+
+================================================================================
+3. ENGINEERING-GRADE COMPONENT LIBRARY
+================================================================================
+
+Unlike "toy" apps, NEXUS includes components needed for actual Computer Architecture:
+
+[A] LOGIC GATES (The Basics)
+    - AND, OR, NOT (Inverter)
+    - NAND, NOR (Universal Gates)
+    - XOR, XNOR (Parity/Arithmetic)
+
+[B] SEQUENTIAL MEMORY (The Pro Stuff)
+    - D Flip-Flop (Data Latch)
+    - JK Flip-Flop (Toggle/Latch)
+    - *Essential for building CPU registers and counters.*
+
+[C] COMPLEX INTEGRATED CIRCUITS
+    - MUX 2:1 (Multiplexer): Selects data streams.
+    - HEX DISPLAY: Full 7-segment hexadecimal decoding (0-F).
+
+[D] INPUTS & OUTPUTS
+    - Clock Pulse (Auto-ticking signal)
+    - Push Button (Momentary press interaction)
+    - Toggle Switch (State hold)
+    - LED Status Indicators
+
+================================================================================
+4. PROFESSIONAL USABILITY TOOLS
+================================================================================
+
+★ Color-Coded Logic Architecture
+   - Components are visually categorized for instant recognition:
+     - GREEN = Inputs (Sources)
+     - RED = Outputs (Visualizers)
+     - PURPLE = Memory (Flip-Flops)
+     - BLUE = Integrated Circuits
+     - ZINC/GOLD = Logic Gates
+
+★ Project Management
+   - Save System: Download projects as .JSON files.
+   - Load System: Upload and resume work instantly.
+   - Clear Canvas: One-click reset to start fresh (with safety confirmation).
+   - Collapsible Sidebar: Slide the menu away for a full-screen "Focus Canvas".
+
+★ Accessibility
+   - Keyboard Shortcuts (Delete key).
+   - "Operations Manual": A built-in help modal explaining controls.
+   - Mobile Responsive: Works on tablets and phones via touch dragging.
+   - Direct Mouse Zoom: Scroll wheel to zoom in/out naturally.
+
+================================================================================
+5. SIMULATION ENGINE SPECS
+================================================================================
+
+- Real-Time Tick Rate: 100ms (Optimized for visual clarity).
+- Event-Driven Propagation: Wires light up instantly when logic states change.
+- Safety Systems: Prevents "Truth Table" generation on memory circuits (which would cause infinite loops) with helpful user warnings.
