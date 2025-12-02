@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Cpu, Play, Sparkles, Wand2, Zap, ZoomIn, ZoomOut, Maximize, Table2, Save, Upload, HelpCircle, PanelLeftClose, PanelLeftOpen, Cable, GitCommitHorizontal, Sun, Moon, Palette, MoreVertical, Trash2, FileDown, FileUp, Settings, BookOpen, RotateCcw, RotateCw } from 'lucide-react';
+import { Cpu, Play, Sparkles, Wand2, Zap, ZoomIn, ZoomOut, Maximize, Table2, Save, Upload, HelpCircle, PanelLeftClose, PanelLeftOpen, Cable, GitCommitHorizontal, Sun, Moon, Palette, MoreVertical, Trash2, FileDown, FileUp, Settings, BookOpen, RotateCcw, RotateCw, History, CheckCircle2 } from 'lucide-react';
 
 interface TopBarProps {
   onGenerate: (prompt: string) => void;
@@ -17,6 +17,7 @@ interface TopBarProps {
   onOpenHelp: () => void;
   onOpenSettings: () => void;
   onOpenTemplates: () => void;
+  onOpenHistory: () => void;
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
   wireStyle: 'curved' | 'straight';
@@ -47,6 +48,7 @@ const TopBar: React.FC<TopBarProps> = ({
   onOpenHelp,
   onOpenSettings,
   onOpenTemplates,
+  onOpenHistory,
   isSidebarOpen,
   onToggleSidebar,
   wireStyle,
@@ -279,6 +281,12 @@ const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Auto-save indicator */}
+            <div className="hidden xl:flex items-center gap-1.5 mr-2 px-2 py-1 rounded-md bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800/50">
+                <CheckCircle2 className="w-3 h-3 text-green-500" />
+                <span className="text-[9px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Saved</span>
+            </div>
+
            {theme === 'dark' && (
               <div className="relative" ref={paletteRef}>
                   <button 
@@ -317,7 +325,7 @@ const TopBar: React.FC<TopBarProps> = ({
                </button>
 
                {isMenuOpen && (
-                   <div className="fixed top-16 right-4 z-[100] w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1">
+                   <div className="fixed top-16 right-4 z-[100] w-52 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1">
                        <button onClick={() => { onSave(); setIsMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
                            <FileDown className="w-4 h-4" /> Save Project
                        </button>
@@ -325,9 +333,14 @@ const TopBar: React.FC<TopBarProps> = ({
                            <FileUp className="w-4 h-4" /> Load Project
                            <input type="file" accept=".json" onChange={(e) => { onLoad(e); setIsMenuOpen(false); }} className="hidden" />
                        </label>
+                       <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1"></div>
                        <button onClick={() => { onOpenTemplates(); setIsMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
                            <BookOpen className="w-4 h-4" /> Library
                        </button>
+                       <button onClick={() => { onOpenHistory(); setIsMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                           <History className="w-4 h-4" /> Recovery History
+                       </button>
+                        <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1"></div>
                        <button onClick={() => { onOpenHelp(); setIsMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
                            <HelpCircle className="w-4 h-4" /> Help / Manual
                        </button>

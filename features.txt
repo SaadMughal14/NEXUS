@@ -91,6 +91,8 @@ Unlike "toy" apps, NEXUS includes components needed for actual Computer Architec
      - ZINC/GOLD = Logic Gates
 
 ★ Project Management
+   - Auto-Save: Automatically secures your work to browser storage every second.
+   - Recovery History: Stores the last 3 cleared sessions for instant restoration.
    - Save System: Download projects as .JSON files.
    - Load System: Upload and resume work instantly.
    - Clear Canvas: One-click reset to start fresh (with safety confirmation).

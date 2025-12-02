@@ -5,8 +5,9 @@ import Canvas from './components/Canvas';
 import { CircuitState, TruthTableRow } from './types';
 import { generateCircuit, explainCircuit, validateConnection } from './services/geminiService';
 import { COMPONENT_DEFINITIONS, CIRCUIT_EXAMPLES } from './constants';
-import { X, MousePointer2, Move, RotateCw, Keyboard, GitCommitHorizontal, Cable, AlertTriangle, Key, CheckCircle2, XCircle, ShieldCheck, Server, BookOpen, ChevronRight, LayoutTemplate } from 'lucide-react';
+import { X, MousePointer2, Move, RotateCw, Keyboard, GitCommitHorizontal, Cable, AlertTriangle, Key, CheckCircle2, XCircle, ShieldCheck, Server, BookOpen, ChevronRight, LayoutTemplate, History, Clock } from 'lucide-react';
 
+// Default "Wow" Circuit for First-Time Users
 const DEFAULT_CIRCUIT: CircuitState = {
   nodes: [
     { id: 'master_clk', type: 'CLOCK', x: 60, y: 320, rotation: 0, data: {}, label: 'SYS_CLK' },
@@ -54,10 +55,26 @@ const DEFAULT_CIRCUIT: CircuitState = {
   selectedId: null
 };
 
+const EMPTY_CIRCUIT: CircuitState = {
+    nodes: [],
+    wires: [],
+    scale: 1,
+    offset: { x: 50, y: 50 },
+    selectedId: null
+};
+
+interface ArchivedSession {
+    id: number;
+    timestamp: number;
+    preview: string;
+    state: CircuitState;
+}
+
 const App: React.FC = () => {
-  const [circuitState, setCircuitState] = useState<CircuitState>(DEFAULT_CIRCUIT);
+  const [circuitState, setCircuitState] = useState<CircuitState>(EMPTY_CIRCUIT);
   const [history, setHistory] = useState<CircuitState[]>([]);
   const [future, setFuture] = useState<CircuitState[]>([]);
+  const [archivedSessions, setArchivedSessions] = useState<ArchivedSession[]>([]);
   
   const [isSimulating, setIsSimulating] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -73,25 +90,68 @@ const App: React.FC = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [tempKey, setTempKey] = useState('');
   const [keyStatus, setKeyStatus] = useState<'none' | 'validating' | 'valid' | 'invalid'>('none');
 
+  // Initialization Logic
   useEffect(() => {
     document.documentElement.classList.add('dark');
+    
+    // 1. Load API Key
     const storedKey = localStorage.getItem('gemini_api_key');
     if (storedKey) {
         setApiKey(storedKey);
         setTempKey(storedKey);
         setKeyStatus('valid'); 
     }
+
+    // 2. Load Session History
+    const storedHistory = localStorage.getItem('nexus_session_archives');
+    if (storedHistory) {
+        try {
+            setArchivedSessions(JSON.parse(storedHistory));
+        } catch (e) { console.error("History parse error", e); }
+    }
+
+    // 3. Smart Load Strategy
+    const hasVisited = localStorage.getItem('nexus_has_visited');
+    const autoSaved = localStorage.getItem('nexus_autosave');
+
+    if (autoSaved) {
+        // Returning user with unsaved work -> Restore it
+        try {
+            setCircuitState(JSON.parse(autoSaved));
+            setAiMessage("Session Restored from Auto-Save.");
+            setTimeout(() => setAiMessage(null), 3000);
+        } catch (e) {
+            setCircuitState(EMPTY_CIRCUIT);
+        }
+    } else if (!hasVisited) {
+        // First time ever -> Show WOW circuit
+        setCircuitState(DEFAULT_CIRCUIT);
+        localStorage.setItem('nexus_has_visited', 'true');
+    } else {
+        // Returning user, no auto-save -> Clean Slate
+        setCircuitState(EMPTY_CIRCUIT);
+    }
   }, []);
+
+  // Auto-Save Logic
+  useEffect(() => {
+      const timer = setTimeout(() => {
+          if (circuitState.nodes.length > 0) {
+            localStorage.setItem('nexus_autosave', JSON.stringify(circuitState));
+          }
+      }, 1000); // Debounce 1s
+      return () => clearTimeout(timer);
+  }, [circuitState]);
 
   // --- Undo / Redo Logic ---
   const commitState = () => {
-    // Only commit if the last state is different (simplified check could be improved)
     setHistory(prev => [...prev, circuitState]);
-    setFuture([]); // Clear future on new action
+    setFuture([]); 
   };
 
   const handleUndo = () => {
@@ -142,8 +202,25 @@ const App: React.FC = () => {
       setKeyStatus('none');
   };
 
+  // Archive current session before destroying it
+  const archiveSession = () => {
+      if (circuitState.nodes.length === 0) return; // Don't archive empty
+
+      const newArchive: ArchivedSession = {
+          id: Date.now(),
+          timestamp: Date.now(),
+          preview: `${circuitState.nodes.length} Components, ${circuitState.wires.length} Wires`,
+          state: circuitState
+      };
+      
+      const updatedArchives = [newArchive, ...archivedSessions].slice(0, 3); // Keep last 3
+      setArchivedSessions(updatedArchives);
+      localStorage.setItem('nexus_session_archives', JSON.stringify(updatedArchives));
+  };
+
   const loadTemplate = (templateKey: string) => {
-      commitState(); // Save current before loading
+      archiveSession(); // Safety save
+      commitState(); // Undo save
       const template = CIRCUIT_EXAMPLES[templateKey];
       if (template) {
           setCircuitState(template.state);
@@ -153,6 +230,15 @@ const App: React.FC = () => {
           setTimeout(() => setAiMessage(null), 3000);
       }
   };
+
+  const restoreSession = (session: ArchivedSession) => {
+      archiveSession(); // Save current before restoring old
+      commitState();
+      setCircuitState(session.state);
+      setShowHistoryModal(false);
+      setAiMessage("Historical Session Restored.");
+      setTimeout(() => setAiMessage(null), 3000);
+  }
 
   const toggleTheme = () => {
       if (theme === 'dark') {
@@ -211,6 +297,7 @@ const App: React.FC = () => {
              setShowTemplatesModal(false);
              setTruthTable(null);
              setShowClearConfirm(false);
+             setShowHistoryModal(false);
           }
       };
       window.addEventListener('keydown', handleKeyDown);
@@ -356,6 +443,7 @@ const App: React.FC = () => {
   const handleLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if(!file) return;
+      archiveSession(); // Archive before overwrite
       const reader = new FileReader();
       reader.onload = (ev) => {
           try {
@@ -372,16 +460,13 @@ const App: React.FC = () => {
   };
 
   const confirmClear = () => {
+     archiveSession(); // Archive before clear
      commitState();
-     setCircuitState({
-         nodes: [],
-         wires: [],
-         scale: 1,
-         offset: { x: 50, y: 50 },
-         selectedId: null
-     });
+     setCircuitState(EMPTY_CIRCUIT);
+     // Clear the autosave too since user explicitly wanted empty
+     localStorage.removeItem('nexus_autosave');
      setShowClearConfirm(false);
-     setAiMessage("Canvas Purged.");
+     setAiMessage("Canvas Purged. Previous state archived.");
      setTimeout(() => setAiMessage(null), 3000);
   };
 
@@ -403,6 +488,7 @@ const App: React.FC = () => {
         onOpenHelp={() => setShowHelp(true)}
         onOpenSettings={() => setShowApiKeyModal(true)}
         onOpenTemplates={() => setShowTemplatesModal(true)}
+        onOpenHistory={() => setShowHistoryModal(true)}
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         wireStyle={wireStyle}
@@ -456,7 +542,9 @@ const App: React.FC = () => {
                         </div>
                         <div className="p-6">
                             <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
-                                Are you sure you want to delete all components and wires? This action cannot be undone and your current circuit will be lost.
+                                Are you sure you want to delete all components and wires? 
+                                <br/><br/>
+                                <span className="text-xs font-mono bg-zinc-100 dark:bg-zinc-800 p-1 rounded text-zinc-500">Note: A backup snapshot will be saved to History.</span>
                             </p>
                             <div className="flex justify-end gap-3">
                                 <button onClick={() => setShowClearConfirm(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
@@ -467,6 +555,54 @@ const App: React.FC = () => {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                 </div>
+            )}
+
+            {showHistoryModal && (
+                 <div className="absolute inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-8 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden relative flex flex-col max-h-full">
+                         <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-900/50">
+                             <h2 className="text-lg font-bold font-mono text-zinc-900 dark:text-white flex items-center gap-2">
+                                <History className="text-indigo-600 dark:text-amber-500 w-5 h-5" />
+                                SESSION ARCHIVES
+                             </h2>
+                             <button onClick={() => setShowHistoryModal(false)} className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
+                                 <X size={20} />
+                             </button>
+                         </div>
+                         <div className="p-6 overflow-y-auto space-y-4">
+                             {archivedSessions.length === 0 ? (
+                                 <div className="text-center py-12 text-zinc-500 dark:text-zinc-400 font-mono text-sm">
+                                     No archival history found.
+                                 </div>
+                             ) : (
+                                 archivedSessions.map((session) => (
+                                     <div key={session.id} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-indigo-500 dark:hover:border-amber-500 transition-colors">
+                                         <div>
+                                             <div className="flex items-center gap-2 mb-1">
+                                                 <Clock className="w-3.5 h-3.5 text-indigo-500 dark:text-amber-500" />
+                                                 <span className="text-xs font-mono text-zinc-400 dark:text-zinc-500">
+                                                     {new Date(session.timestamp).toLocaleString()}
+                                                 </span>
+                                             </div>
+                                             <div className="text-sm font-bold text-zinc-900 dark:text-white">
+                                                 {session.preview}
+                                             </div>
+                                         </div>
+                                         <button 
+                                            onClick={() => restoreSession(session)}
+                                            className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-medium hover:bg-indigo-50 dark:hover:bg-amber-900/20 text-indigo-600 dark:text-amber-500 transition-colors"
+                                         >
+                                             Restore
+                                         </button>
+                                     </div>
+                                 ))
+                             )}
+                         </div>
+                         <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 font-mono text-center">
+                             Stores last 3 cleared sessions automatically.
+                         </div>
                     </div>
                  </div>
             )}
