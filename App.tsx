@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -57,6 +56,9 @@ const DEFAULT_CIRCUIT: CircuitState = {
 
 const App: React.FC = () => {
   const [circuitState, setCircuitState] = useState<CircuitState>(DEFAULT_CIRCUIT);
+  const [history, setHistory] = useState<CircuitState[]>([]);
+  const [future, setFuture] = useState<CircuitState[]>([]);
+  
   const [isSimulating, setIsSimulating] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
@@ -76,21 +78,40 @@ const App: React.FC = () => {
   const [keyStatus, setKeyStatus] = useState<'none' | 'validating' | 'valid' | 'invalid'>('none');
 
   useEffect(() => {
-    // Initial Theme Setup
     document.documentElement.classList.add('dark');
-    // Load stored API key
     const storedKey = localStorage.getItem('gemini_api_key');
     if (storedKey) {
         setApiKey(storedKey);
         setTempKey(storedKey);
-        setKeyStatus('valid'); // Assume valid on load, user can re-test
+        setKeyStatus('valid'); 
     }
   }, []);
 
+  // --- Undo / Redo Logic ---
+  const commitState = () => {
+    // Only commit if the last state is different (simplified check could be improved)
+    setHistory(prev => [...prev, circuitState]);
+    setFuture([]); // Clear future on new action
+  };
+
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const previous = history[history.length - 1];
+    setFuture(prev => [circuitState, ...prev]);
+    setHistory(prev => prev.slice(0, -1));
+    setCircuitState(previous);
+  };
+
+  const handleRedo = () => {
+    if (future.length === 0) return;
+    const next = future[0];
+    setHistory(prev => [...prev, circuitState]);
+    setFuture(prev => prev.slice(1));
+    setCircuitState(next);
+  };
+
   const isValidKeyFormat = (key: string) => {
-      // Basic validation for Google (AIza...) or OpenAI (sk-...) style keys
       const trimmed = key.trim();
-      // Ensure it starts with typical provider prefixes and has sufficient length
       return trimmed.length > 20 && (trimmed.startsWith('AIza') || trimmed.startsWith('sk-'));
   };
 
@@ -122,11 +143,11 @@ const App: React.FC = () => {
   };
 
   const loadTemplate = (templateKey: string) => {
+      commitState(); // Save current before loading
       const template = CIRCUIT_EXAMPLES[templateKey];
       if (template) {
           setCircuitState(template.state);
           setShowTemplatesModal(false);
-          // Set wire style to straight for templates to ensure clean look
           setWireStyle('straight');
           setAiMessage(`Library Module Loaded: ${template.name}`);
           setTimeout(() => setAiMessage(null), 3000);
@@ -147,11 +168,21 @@ const App: React.FC = () => {
 
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
-          // Ignore if user is typing in an input
           if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
 
-          // Delete / Backspace
+          // Undo: Ctrl+Z
+          if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+             e.preventDefault();
+             handleUndo();
+          }
+          // Redo: Ctrl+Y or Ctrl+Shift+Z
+          if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+             e.preventDefault();
+             handleRedo();
+          }
+
           if ((e.key === 'Delete' || e.key === 'Backspace') && circuitState.selectedId) {
+              commitState();
               setCircuitState(prev => ({
                   ...prev,
                   nodes: prev.nodes.filter(n => n.id !== prev.selectedId),
@@ -160,21 +191,19 @@ const App: React.FC = () => {
               }));
           }
 
-          // R -> Rotate Selected
           if ((e.key === 'r' || e.key === 'R') && circuitState.selectedId) {
+             commitState();
              setCircuitState(prev => ({
                  ...prev,
                  nodes: prev.nodes.map(n => n.id === prev.selectedId ? { ...n, rotation: (n.rotation + 90) % 360 } : n)
              }));
           }
 
-          // Space -> Toggle Simulation
           if (e.key === ' ') {
               e.preventDefault(); 
               setIsSimulating(prev => !prev);
           }
 
-          // Escape -> Clear Selection / Close Modals
           if (e.key === 'Escape') {
              setCircuitState(prev => ({ ...prev, selectedId: null }));
              setShowApiKeyModal(false);
@@ -186,13 +215,14 @@ const App: React.FC = () => {
       };
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [circuitState.selectedId]);
+  }, [circuitState.selectedId, history, future, circuitState]);
 
   const handleGenerate = async (prompt: string) => {
     if (!apiKey && !process.env.API_KEY) {
         setShowApiKeyModal(true);
         return;
     }
+    commitState();
     setIsProcessing(true);
     setAiMessage("Architecting system logic...");
     try {
@@ -265,20 +295,17 @@ const App: React.FC = () => {
     setTimeout(() => {
         const rows: TruthTableRow[] = [];
         const combinations = Math.pow(2, inputs.length);
-
         for (let i = 0; i < combinations; i++) {
             const inputState: Record<string, boolean> = {};
             inputs.forEach((input, index) => {
                 const isOn = ((i >> index) & 1) === 1;
                 inputState[input.id] = isOn;
             });
-
             const nodeStates: Record<string, Record<string, boolean>> = {};
             circuitState.nodes.forEach(node => {
                 if(!nodeStates[node.id]) nodeStates[node.id] = {};
                 if(inputState[node.id] !== undefined) nodeStates[node.id]['out'] = inputState[node.id];
             });
-
             for(let step=0; step<10; step++) {
                  circuitState.nodes.forEach(node => {
                     const getIn = (pid: string) => {
@@ -302,16 +329,11 @@ const App: React.FC = () => {
                     if(node.type === 'LED') nodeStates[node.id]['active'] = getIn('in');
                  });
             }
-
             const outputState: Record<string, boolean> = {};
             outputs.forEach(out => {
                 if(out.type === 'LED') outputState[out.id] = nodeStates[out.id]['active'];
             });
-
-            rows.push({
-                inputs: inputState,
-                outputs: outputState
-            });
+            rows.push({ inputs: inputState, outputs: outputState });
         }
         setTruthTable(rows);
         setIsProcessing(false);
@@ -338,6 +360,7 @@ const App: React.FC = () => {
       reader.onload = (ev) => {
           try {
               const state = JSON.parse(ev.target?.result as string);
+              commitState();
               setCircuitState(state);
               setAiMessage("Project Loaded Successfully.");
           } catch(err) {
@@ -349,6 +372,7 @@ const App: React.FC = () => {
   };
 
   const confirmClear = () => {
+     commitState();
      setCircuitState({
          nodes: [],
          wires: [],
@@ -387,6 +411,10 @@ const App: React.FC = () => {
         onToggleTheme={toggleTheme}
         wireColor={wireColor}
         onSetWireColor={setWireColor}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={history.length > 0}
+        canRedo={future.length > 0}
       />
       
       <div className="flex flex-1 pt-16 overflow-hidden">
@@ -399,6 +427,7 @@ const App: React.FC = () => {
                 wireStyle={wireStyle}
                 theme={theme}
                 wireColor={wireColor}
+                onCommit={commitState}
             />
             
             {aiMessage && (
@@ -413,7 +442,6 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            {/* CONFIRM CLEAR MODAL */}
             {showClearConfirm && (
                  <div className="absolute inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-8 animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-[#09090b] border border-red-200 dark:border-red-900/50 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
@@ -431,16 +459,10 @@ const App: React.FC = () => {
                                 Are you sure you want to delete all components and wires? This action cannot be undone and your current circuit will be lost.
                             </p>
                             <div className="flex justify-end gap-3">
-                                <button 
-                                    onClick={() => setShowClearConfirm(false)}
-                                    className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                                >
+                                <button onClick={() => setShowClearConfirm(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                                     Cancel
                                 </button>
-                                <button 
-                                    onClick={confirmClear}
-                                    className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20 transition-colors"
-                                >
+                                <button onClick={confirmClear} className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20 transition-colors">
                                     Confirm Purge
                                 </button>
                             </div>
@@ -449,7 +471,6 @@ const App: React.FC = () => {
                  </div>
             )}
 
-            {/* TEMPLATES MODAL */}
             {showTemplatesModal && (
                  <div className="absolute inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-8 animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-700 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden relative flex flex-col max-h-full">
@@ -484,7 +505,6 @@ const App: React.FC = () => {
                  </div>
             )}
 
-            {/* SYSTEM CONFIGURATION MODAL */}
             {showApiKeyModal && (
                  <div className="absolute inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-8 animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-700 w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden relative">
@@ -637,12 +657,12 @@ const App: React.FC = () => {
                                          <kbd className="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-mono text-zinc-900 dark:text-white">Del</kbd>
                                      </div>
                                      <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
-                                         <span className="text-zinc-500">Simulate</span>
-                                         <kbd className="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-mono text-zinc-900 dark:text-white">Spc</kbd>
+                                         <span className="text-zinc-500">Undo/Redo</span>
+                                         <kbd className="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-mono text-zinc-900 dark:text-white">Ctrl+Z</kbd>
                                      </div>
                                      <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
-                                         <span className="text-zinc-500">Deselect</span>
-                                         <kbd className="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-mono text-zinc-900 dark:text-white">Esc</kbd>
+                                         <span className="text-zinc-500">Simulate</span>
+                                         <kbd className="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 font-mono text-zinc-900 dark:text-white">Spc</kbd>
                                      </div>
                                 </div>
                                 

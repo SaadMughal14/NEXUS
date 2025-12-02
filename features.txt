@@ -95,9 +95,10 @@ Unlike "toy" apps, NEXUS includes components needed for actual Computer Architec
    - Load System: Upload and resume work instantly.
    - Clear Canvas: One-click reset to start fresh (with safety confirmation).
    - Collapsible Sidebar: Slide the menu away for a full-screen "Focus Canvas".
+   - QUICK ACTIONS: Undo (Ctrl+Z) and Redo (Ctrl+Y) functionality for safe editing.
 
 ★ Accessibility
-   - Keyboard Shortcuts (Delete, Backspace, Spacebar, R-Rotate, Esc).
+   - Keyboard Shortcuts (Delete, Backspace, Spacebar, R-Rotate, Esc, Ctrl+Z).
    - "Operations Manual": A built-in help modal explaining controls.
    - Mobile Responsive: Works on tablets and phones via touch dragging.
    - Direct Mouse Zoom: Scroll wheel to zoom in/out naturally.

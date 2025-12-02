@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Cpu, Play, Sparkles, Wand2, Zap, ZoomIn, ZoomOut, Maximize, Table2, Save, Upload, HelpCircle, PanelLeftClose, PanelLeftOpen, Cable, GitCommitHorizontal, Sun, Moon, Palette, MoreVertical, Trash2, FileDown, FileUp, Settings, BookOpen } from 'lucide-react';
+import { Cpu, Play, Sparkles, Wand2, Zap, ZoomIn, ZoomOut, Maximize, Table2, Save, Upload, HelpCircle, PanelLeftClose, PanelLeftOpen, Cable, GitCommitHorizontal, Sun, Moon, Palette, MoreVertical, Trash2, FileDown, FileUp, Settings, BookOpen, RotateCcw, RotateCw } from 'lucide-react';
 
 interface TopBarProps {
   onGenerate: (prompt: string) => void;
@@ -25,6 +25,10 @@ interface TopBarProps {
   onToggleTheme: () => void;
   wireColor: string;
   onSetWireColor: (color: string) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const TopBar: React.FC<TopBarProps> = ({ 
@@ -50,7 +54,11 @@ const TopBar: React.FC<TopBarProps> = ({
   theme,
   onToggleTheme,
   wireColor,
-  onSetWireColor
+  onSetWireColor,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo
 }) => {
   const [prompt, setPrompt] = useState('');
   const [isPromptOpen, setIsPromptOpen] = useState(false);
@@ -147,6 +155,35 @@ const TopBar: React.FC<TopBarProps> = ({
 
           <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-800 mx-1"></div>
 
+          {/* Quick Actions (Undo/Redo/Clear) */}
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={onUndo} 
+              disabled={!canUndo}
+              className={`p-2 rounded-lg transition-colors ${!canUndo ? 'text-zinc-300 dark:text-zinc-700 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 dark:hover:text-white'}`}
+              title="Undo (Ctrl+Z)"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={onRedo}
+              disabled={!canRedo} 
+              className={`p-2 rounded-lg transition-colors ${!canRedo ? 'text-zinc-300 dark:text-zinc-700 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 dark:hover:text-white'}`}
+              title="Redo (Ctrl+Y)"
+            >
+              <RotateCw className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={onClear} 
+              className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-500 transition-colors"
+              title="Clear Canvas"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-800 mx-1"></div>
+
           {/* View Controls */}
           <div className="flex items-center">
              <button 
@@ -160,7 +197,7 @@ const TopBar: React.FC<TopBarProps> = ({
               title="Clean Wire Routing (Great for ADHD/OCD focus)"
             >
               {wireStyle === 'straight' ? <GitCommitHorizontal className="w-4 h-4" /> : <Cable className="w-4 h-4" />}
-              <span className="whitespace-nowrap">ADHD/OCD MODE</span>
+              <span className="hidden xl:inline">ADHD/OCD MODE</span>
             </button>
             
             <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-800 mx-1"></div>
@@ -296,10 +333,6 @@ const TopBar: React.FC<TopBarProps> = ({
                        </button>
                        <button onClick={() => { onOpenSettings(); setIsMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
                            <Settings className="w-4 h-4" /> Configuration
-                       </button>
-                       <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1 mx-2"></div>
-                       <button onClick={() => { onClear(); setIsMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400">
-                           <Trash2 className="w-4 h-4" /> Clear Canvas
                        </button>
                    </div>
                )}
